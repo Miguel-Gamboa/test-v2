@@ -6,6 +6,8 @@ import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import { MailService } from '../mail/mail.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('productos')
 export class ProductoController {
@@ -13,6 +15,8 @@ export class ProductoController {
     private readonly productoService: ProductoService,
     private readonly marcaService: MarcaService,
     private readonly categoriaService: CategoriaService,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get()
@@ -79,7 +83,15 @@ export class ProductoController {
       updateProductoDto.imagen = file.filename;
     }
     try {
-      await this.productoService.update(id, updateProductoDto);
+      const updatedProduct = await this.productoService.update(id, updateProductoDto);
+      
+      //Contenido del mensaje de edición
+      await this.mailService.sendMail(
+        this.configService.get('NOTIFICATION_EMAIL'),
+        'Producto Actualizado',
+        `El producto: '${updatedProduct.nombreproducto}' - (ID: ${id}), ha sido actualizado.`
+      );
+
       res.redirect('/productos');
     } catch (error) {
       console.error('Error updating product:', error);
@@ -91,7 +103,20 @@ export class ProductoController {
   async remove(@Param('id') id: string, @Res() res: Response, @Body('_method') method: string) {
     if (method === 'DELETE') {
       try {
+        const producto = await this.productoService.findOne(id);
+        if (!producto) {
+          throw new Error('Producto no encontrado');
+        }
+        
         await this.productoService.remove(id);
+        
+        //Contenido del mensaje de eliminación
+        await this.mailService.sendMail(
+          this.configService.get('NOTIFICATION_EMAIL'),
+          'Producto Eliminado',
+          `El producto: '${producto.nombreproducto}' - (ID: ${id}),  ha sido eliminado.`
+        );
+        
         res.redirect('/productos');
       } catch (error) {
         console.error('Error deleting product:', error);

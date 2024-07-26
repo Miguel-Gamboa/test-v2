@@ -30,7 +30,10 @@
         </select>
     </div><br>
 
-    <a href="/productos/add">Agregar Nuevo Producto</a>
+    <a href="/productos/add">Agregar Nuevo Producto</a><br>
+    <a href="/carrito" id="carritoBtn" style="float: right;"><img src="3144456.png" style="width:30px; margin-bottom:-8px ; border:none"
+    alt="carrito">Productos seleccionados (<span id="carritoCount">0</span>)</a>
+    <br><br>
 
     <ul id="productosList">
         {{#each productos}}
@@ -49,6 +52,14 @@
                     <input type="hidden" name="_method" value="DELETE">
                     <button type="submit">Eliminar</button>
                 </form>
+                <button onclick="agregarAlCarrito(
+                    {{this.idproducto}}, 
+                    '{{this.nombreproducto}}', 
+                    '{{this.marca.nombremarca}}', 
+                    '{{this.categoria.nombrecategoria}}', 
+                    {{this.precioventa}}, 
+                    '/uploads/{{this.imagen}}'
+                )">Añadir al carrito</button>
             </div>
         </li>
         {{/each}}
@@ -59,6 +70,19 @@
         const marcaSelect = document.getElementById('marcaSelect');
         const categoriaSelect = document.getElementById('categoriaSelect');
         const productosList = document.getElementById('productosList');
+        const carritoCount = document.getElementById('carritoCount');
+
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+        function actualizarContadorCarrito() {
+            carritoCount.textContent = carrito.length;
+        }
+
+        function agregarAlCarrito(id, nombre, marca, categoria, precio, imagen) {
+            carrito.push({ id, nombre, marca, categoria, precio, imagen });
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            actualizarContadorCarrito();
+        }
 
         function debounce(func, timeout = 300){
             let timer;
@@ -85,6 +109,8 @@
         searchInput.addEventListener('input', debouncedUpdate);
         marcaSelect.addEventListener('change', updateProductos);
         categoriaSelect.addEventListener('change', updateProductos);
+
+        actualizarContadorCarrito();
     </script>
 </body>
 </html>

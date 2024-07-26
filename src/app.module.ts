@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { Producto } from './models/producto.model';
 import { Marca } from './models/marca.model';
 import { Categoria } from './models/categoria.model';
+import { CarritoModule } from './carrito/carrito.module';
 
 import { ProductoController } from './producto/producto.controller';
 import { ProductoService } from './producto/producto.service';
@@ -18,8 +19,11 @@ import { MarcaService } from './marca/marca.service';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app/app.controller';
 
+import { MailModule } from './mail/mail.module';
+
 @Module({
   imports: [
+    CarritoModule,
     ConfigModule.forRoot({
       envFilePath: '.env',
       isGlobal: true,
@@ -41,6 +45,7 @@ import { AppController } from './app/app.controller';
     }),
     SequelizeModule.forFeature([Producto, Marca, Categoria]),
     AuthModule,
+    MailModule,
   ],
   controllers: [
     AppController,

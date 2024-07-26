@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/main.css">
+    <title>Carrito de Compras</title>
+    <style>
+        .producto-carrito {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .producto-imagen {
+            width: 150px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .producto-info {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Carrito de Compras</h1>
+    <button onclick="redirectToProductos()">Regresar a la lista de Productos</button>
+    <ul id="listaCarrito"></ul>
+    <button onclick="imprimirLista()">Imprimir lista</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function redirectToProductos() {
+            window.location.href = '/productos';
+        }
+
+        const listaCarrito = document.getElementById('listaCarrito');
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+        function mostrarCarrito() {
+            console.log(carrito);
+            listaCarrito.innerHTML = '';
+            carrito.forEach((producto, index) => {
+                const li = document.createElement('li');
+                li.className = 'producto-carrito';
+                li.innerHTML = `
+                    <img src="${producto.imagen}" alt="${producto.nombre}" class="producto-imagen">
+                    <div class="producto-info">
+                        <h3>${producto.nombre}</h3>
+                        <p>Marca: ${producto.marca}</p>
+                        <p>Categoría: ${producto.categoria}</p>
+                        <p>Precio: S/.${producto.precio}</p>
+                    </div>
+                    <button class="remove-item" onclick="quitarDelCarrito(${index})">Quitar</button>
+                `;
+                listaCarrito.appendChild(li);
+            });
+        }
+
+        function quitarDelCarrito(index) {
+            carrito.splice(index, 1);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            mostrarCarrito();
+        }
+
+        function imprimirLista() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.text("Lista de Productos", 15, 15);
+            let y = 25;
+
+            const addImageToPDF = (imageUrl, index) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = 200;
+                        canvas.height = 200;
+                        ctx.drawImage(img, 0, 0, 200, 200);
+                        const dataUrl = canvas.toDataURL('image/jpeg');
+                        
+                        doc.addImage(dataUrl, 'JPEG', 10, y, 40, 40);
+                        resolve();
+                    };
+                    img.onerror = function() {
+                        console.error(`Error loading image: ${imageUrl}`);
+                        resolve();
+                    };
+                    img.src = imageUrl;
+                });
+            };
+
+            const processProducts = async () => {
+                for (let i = 0; i < carrito.length; i++) {
+                    const producto = carrito[i];
+                    await addImageToPDF(producto.imagen, i);
+                    
+                    doc.text(`Producto: ${producto.nombre}`, 55, y + 5);
+                    doc.text(`Marca: ${producto.marca}`, 55, y + 10);
+                    doc.text(`Categoría: ${producto.categoria}`, 55, y + 15);
+                    doc.text(`Precio: S/.${producto.precio}`, 55, y + 20);
+                    
+                    y += 50;
+                    
+                    if (y > 250) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                }
+                
+                doc.save("lista_productos.pdf");
+            };
+
+            processProducts();
+        }
+
+        mostrarCarrito();
+    </script>
+</body>
+</html>
